@@ -1,0 +1,36 @@
+#!/bin/bash
+
+main() {
+  deploy_my_app
+  print_greeting
+  clean_up
+}
+
+deploy_my_app() {
+  kubectl apply --filename my-app.yaml > /dev/null
+
+  while [ "$(kubectl get pods | grep my-app-deployment-* | grep Running | wc --lines)" != 2 ]; do
+    sleep 1
+  done
+}
+
+print_greeting() {
+  local -r INGRESS_HOST=$(minikube ip)
+  local -r INGRESS_PORT=$(kubectl get service istio-ingressgateway --namespace istio-system --output jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}')
+
+  local -r GREETING_URL=http://${INGRESS_HOST}:${INGRESS_PORT}/greeting
+
+  while ! curl --silent "${GREETING_URL}" > /dev/null; do
+    sleep 1
+  done
+
+  for ((i = 0; i < 10; ++i)); do
+    curl "${GREETING_URL}" && printf '\n' && sleep 1
+  done
+}
+
+clean_up() {
+  kubectl delete --filename my-app.yaml > /dev/null
+}
+
+[ "${BASH_SOURCE[0]}" == "$0" ] && main "$@"

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+main() {
+  build_image
+  push_image
+}
+
+build_image() {
+  docker build --tag eightycolumns/my-app:1.0.0 "${PWD}"
+}
+
+push_image() {
+  docker login && docker push eightycolumns/my-app:1.0.0
+}
+
+[ "${BASH_SOURCE[0]}" == "$0" ] && main "$@"
